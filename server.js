@@ -14,7 +14,7 @@ const db = mysql.createConnection({
 })
 
 //Xử lý yêu cầu get của React
-app.get('/', (req, res) => {
+app.get('/getQbank', (req, res) => {
   const sql = "SELECT * FROM question_bank";
   db.query(sql, (err, result) => {
     if(err) return res.json({Message: 'Error inside server'});
