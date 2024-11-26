@@ -1,8 +1,12 @@
 import express from 'express'
 import mysql from 'mysql'
 import cors from 'cors'
+import jwt from 'jsonwebtoken'
+import bcrypt from 'bcrypt'
 
 const app = express();
+
+app.use(express.json())
 app.use(cors());
 
 //Kết nối tới database crud trên MySQL mở bằng Xampp
