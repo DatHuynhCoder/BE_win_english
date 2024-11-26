@@ -20,14 +20,25 @@ const db = mysql.createConnection({
   database: 'wineng_db'
 })
 
-//Xử lý yêu cầu get của React
-app.get('/getQbank', (req, res) => {
-  const sql = "SELECT * FROM question_bank";
-  db.query(sql, (err, result) => {
-    if(err) return res.json({Message: 'Error inside server'});
+//Lấy toàn bộ câu hỏi với examid 
+app.get('/get-qbank-by-id', (req, res) => {
+  const {examid} = req.query;
+  const sql = "SELECT * FROM question_bank WHERE examid = ?";
+  db.query(sql,[examid] ,(err, result) => {
+    if(err) return res.json({Message: 'Error for getting question bank info'});
     else res.json(result);
   })
 })
+
+//Lấy tất cả các exam
+app.get('/get-exam', (req, res) => {
+  const sql = "SELECT * FROM exam";
+  db.query(sql, (err, result) => {
+    if(err)return res.json({Message: 'Error for getting exam info'});
+    else res.json(result);
+  })
+})
+
 app.post('/register', (req, res) => {
   const sql = 'insert into user(username, userphone, userpass, useremail) values (?)'
   bcrypt.hash(req.body.password.toString(), salt, (err, hash) => {
@@ -44,6 +55,7 @@ app.post('/register', (req, res) => {
     })
   })
 })
+
 app.post('/login', (req, res) => {
   const sql = 'select * from user where useremail = ?'
   db.query(sql, [req.body.email], (err, data) => {
