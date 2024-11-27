@@ -4,6 +4,9 @@ import cors from 'cors'
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcrypt'
 import cookieParser from 'cookie-parser'
+import dotenv from 'dotenv'
+dotenv.config()
+
 const salt = 10
 
 const app = express()
@@ -20,22 +23,53 @@ const db = mysql.createConnection({
   database: 'wineng_db'
 })
 
-//Lấy toàn bộ câu hỏi với examid 
+// middleware
+function authenToken(req, res, next) {
+  const authorizationHeader = req.headers['authorization'] // <string>: `Bearer {token}`
+  if (!authorizationHeader) return res.status(401).json({ error: 'Authorization header is missing' });
+  const token = authorizationHeader.split(' ')[1]
+  if (!token) return res.status(401).json({ error: 'Token is missing' }); // Unauthorized error
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, data) => {
+    console.log(err, data)
+    if(err) res.sendStatus(403) // Forbidden error
+    next() // complete verify token 
+  })
+}
+
+app.post('/refreshToken', (req, res) => {
+  const { refreshToken } = req.body;
+  if (!refreshToken) return res.status(401).json({ error: 'Refresh token is missing' });
+  // Kiểm tra refresh token trong database
+  const sql = 'SELECT * FROM user WHERE refreshtoken = ?';
+  db.query(sql, [refreshToken], (err, data) => {
+    if (err) return res.status(500).json({ error: 'Server error' });
+    if (data.length === 0) return res.status(403).json({ error: 'Invalid refresh token' });
+    // Xác thực refresh token
+    jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, data) => {
+      if (err) return res.status(403).json({ error: 'Invalid refresh token' });
+      // Tạo access token mới
+      const accessToken = jwt.sign({ username: data.username }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m' });
+      return res.json({ accessToken });
+    });
+  });
+})
+
+//Lấy toàn bộ câu hỏi với examid
 app.get('/get-qbank-by-id', (req, res) => {
   const {examid} = req.query;
   const sql = "SELECT * FROM question_bank WHERE examid = ?";
   db.query(sql,[examid] ,(err, result) => {
     if(err) return res.json({Message: 'Error for getting question bank info'});
-    else res.json(result);
+    else return res.json(result);
   })
 })
 
 //Lấy tất cả các exam
-app.get('/get-exam', (req, res) => {
+app.get('/get-exam', authenToken, (req, res) => {
   const sql = "SELECT * FROM exam";
   db.query(sql, (err, result) => {
     if(err)return res.json({Message: 'Error for getting exam info'});
-    else res.json(result);
+    else return res.json(result);
   })
 })
 
@@ -64,7 +98,16 @@ app.post('/login', (req, res) => {
       bcrypt.compare(req.body.password.toString(), data[0].userpass, (err, response) => {
         if(err) return res.json({Error: 'Password compare error'})
         if(response) {
-          return res.json({Status: 'Success'})
+          const name = data[0].username
+          const accessToken = jwt.sign({name}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '60m'})
+          const refreshToken = jwt.sign({name}, process.env.REFRESH_TOKEN_SECRET, {expiresIn: '7d'})
+          // // Lưu refresh token vào database
+          // const updateTokenSql = 'UPDATE user SET refreshtoken = ? WHERE useremail = ?';
+          // db.query(updateTokenSql, [refreshToken, req.body.email], (err) => {
+          //   if (err) return res.json({ Error: 'Error updating refresh token' });
+          //   return res.json({ Status: 'Success', accessToken, refreshToken });
+          // });
+          return res.json({Status: 'Success', accessToken, refreshToken})
         }
         else {
           return res.json({Error: 'Password not matched'})
