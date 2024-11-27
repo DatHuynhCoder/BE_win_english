@@ -31,13 +31,14 @@ function authenToken(req, res, next) {
   if (!token) return res.status(401).json({ error: 'Token is missing' }); // Unauthorized error
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, data) => {
     console.log(err, data)
-    if(err) res.sendStatus(403) // Forbidden error
+    if(err) return res.sendStatus(403) // Forbidden error
     next() // complete verify token 
   })
 }
 
 app.post('/refreshToken', (req, res) => {
   const { refreshToken } = req.body;
+  // const refreshToken = req.cookies.refreshToken
   if (!refreshToken) return res.status(401).json({ error: 'Refresh token is missing' });
   // Kiểm tra refresh token trong database
   const sql = 'SELECT * FROM user WHERE refreshtoken = ?';
@@ -112,6 +113,12 @@ app.post('/login', (req, res) => {
           const name = data[0].username
           const accessToken = jwt.sign({name}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '60m'})
           const refreshToken = jwt.sign({name}, process.env.REFRESH_TOKEN_SECRET, {expiresIn: '7d'})
+          res.cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            secure: false, // set to true when deploy to production
+            path: '/',
+            sameSite: 'strict'
+          })
           // // Lưu refresh token vào database
           // const updateTokenSql = 'UPDATE user SET refreshtoken = ? WHERE useremail = ?';
           // db.query(updateTokenSql, [refreshToken, req.body.email], (err) => {
@@ -128,6 +135,11 @@ app.post('/login', (req, res) => {
       return res.json({Error: 'No email existed'})
     }
   })
+})
+
+app.post('/logout', authenToken, (req, res) => {
+  res.clearCookie("refreshToken")
+  return res.sendStatus(200).json({Message: "Logged out !"})
 })
 //Mở sever express ở port 8081
 app.listen(8081, () => {
