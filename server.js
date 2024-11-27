@@ -54,6 +54,16 @@ app.post('/refreshToken', (req, res) => {
   });
 })
 
+//Lấy user với id
+app.get('/get-user-by-id', (req,res) => {
+  const {userid} = req.query;
+  const sql = "SELECT * FROM user WHERE userid = ?";
+  db.query(sql,[userid], (err, result) => {
+    if(err) return res.json({Message: 'Error for getting user by id'});
+    else return res.json(result);
+  })
+})
+
 //Lấy toàn bộ câu hỏi với examid
 app.get('/get-qbank-by-id', (req, res) => {
   const {examid} = req.query;
@@ -98,6 +108,7 @@ app.post('/login', (req, res) => {
       bcrypt.compare(req.body.password.toString(), data[0].userpass, (err, response) => {
         if(err) return res.json({Error: 'Password compare error'})
         if(response) {
+          const userid = data[0].userid;
           const name = data[0].username
           const accessToken = jwt.sign({name}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '60m'})
           const refreshToken = jwt.sign({name}, process.env.REFRESH_TOKEN_SECRET, {expiresIn: '7d'})
@@ -107,7 +118,7 @@ app.post('/login', (req, res) => {
           //   if (err) return res.json({ Error: 'Error updating refresh token' });
           //   return res.json({ Status: 'Success', accessToken, refreshToken });
           // });
-          return res.json({Status: 'Success', accessToken, refreshToken})
+          return res.json({Status: 'Success', accessToken, refreshToken, userid})
         }
         else {
           return res.json({Error: 'Password not matched'})
