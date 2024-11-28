@@ -41,18 +41,18 @@ app.post('/refreshToken', (req, res) => {
   // const refreshToken = req.cookies.refreshToken
   if (!refreshToken) return res.status(401).json({ error: 'Refresh token is missing' });
   // Kiểm tra refresh token trong database
-  const sql = 'SELECT * FROM user WHERE refreshtoken = ?';
-  db.query(sql, [refreshToken], (err, data) => {
-    if (err) return res.status(500).json({ error: 'Server error' });
-    if (data.length === 0) return res.status(403).json({ error: 'Invalid refresh token' });
+  // const sql = 'SELECT * FROM user WHERE refreshtoken = ?';
+  // db.query(sql, [refreshToken], (err, data) => {
+    // if (err) return res.status(500).json({ error: 'Server error' });
+    // if (data.length === 0) return res.status(403).json({ error: 'Invalid refresh token' });
     // Xác thực refresh token
     jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, data) => {
       if (err) return res.status(403).json({ error: 'Invalid refresh token' });
       // Tạo access token mới
-      const accessToken = jwt.sign({ username: data.username }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m' });
+      const accessToken = jwt.sign({ username: data.username, userid: data.userid }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m' });
       return res.json({ accessToken });
     });
-  });
+  // });
 })
 
 //Lấy user với id
@@ -111,13 +111,13 @@ app.post('/login', (req, res) => {
         if(response) {
           const userid = data[0].userid;
           const name = data[0].username
-          const accessToken = jwt.sign({name}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '60m'})
-          const refreshToken = jwt.sign({name}, process.env.REFRESH_TOKEN_SECRET, {expiresIn: '7d'})
+          const accessToken = jwt.sign({name, userid}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '60m'})
+          const refreshToken = jwt.sign({name, userid}, process.env.REFRESH_TOKEN_SECRET, {expiresIn: '7d'})
           res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
             secure: false, // set to true when deploy to production
             path: '/',
-            sameSite: 'strict'
+            sameSite: 'strict' 
           })
           // // Lưu refresh token vào database
           // const updateTokenSql = 'UPDATE user SET refreshtoken = ? WHERE useremail = ?';
