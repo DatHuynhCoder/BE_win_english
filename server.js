@@ -86,16 +86,17 @@ app.get('/get-exam', authenToken, (req, res) => {
 
 //Cập nhật giá trị mới cho user
 app.put('/update-user-info', (req, res) => {
-  const { userid, username, userfullname, userphone } = req.body;
+  const { userid, username, userfullname, userphone, useravatarurl } = req.body;
   const sql = `
     UPDATE user
     SET
       username = ?,
       userfullname = ?,
-      userphone = ?
+      userphone = ?,
+      useravatarurl = ?
     WHERE userid =?
   `;
-  db.query(sql, [username, userfullname, userphone, userid], (err, result) => {
+  db.query(sql, [username, userfullname, userphone, useravatarurl ,userid], (err, result) => {
     if (err) {
       console.error('Error updating user info:', err);
       return res.status(500).json({ error: 'Server error while updating user info' });
@@ -152,7 +153,7 @@ app.post('/login', (req, res) => {
           //   if (err) return res.json({ Error: 'Error updating refresh token' });
           //   return res.json({ Status: 'Success', accessToken, refreshToken });
           // });
-          return res.json({ Status: 'Success', accessToken, refreshToken, userid })
+          return res.json({ Status: 'Success', accessToken, refreshToken})
         }
         else {
           return res.json({ Error: 'Password not matched' })
