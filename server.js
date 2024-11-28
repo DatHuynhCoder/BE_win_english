@@ -31,7 +31,7 @@ function authenToken(req, res, next) {
   if (!token) return res.status(401).json({ error: 'Token is missing' }); // Unauthorized error
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, data) => {
     console.log(err, data)
-    if(err) return res.sendStatus(403) // Forbidden error
+    if (err) return res.sendStatus(403) // Forbidden error
     next() // complete verify token 
   })
 }
@@ -56,21 +56,21 @@ app.post('/refreshToken', (req, res) => {
 })
 
 //Lấy user với id
-app.get('/get-user-by-id', (req,res) => {
-  const {userid} = req.query;
+app.get('/get-user-by-id', (req, res) => {
+  const { userid } = req.query;
   const sql = "SELECT * FROM user WHERE userid = ?";
-  db.query(sql,[userid], (err, result) => {
-    if(err) return res.json({Message: 'Error for getting user by id'});
+  db.query(sql, [userid], (err, result) => {
+    if (err) return res.json({ Message: 'Error for getting user by id' });
     else return res.json(result);
   })
 })
 
 //Lấy toàn bộ câu hỏi với examid
 app.get('/get-qbank-by-id', (req, res) => {
-  const {examid} = req.query;
+  const { examid } = req.query;
   const sql = "SELECT * FROM question_bank WHERE examid = ?";
-  db.query(sql,[examid] ,(err, result) => {
-    if(err) return res.json({Message: 'Error for getting question bank info'});
+  db.query(sql, [examid], (err, result) => {
+    if (err) return res.json({ Message: 'Error for getting question bank info' });
     else return res.json(result);
   })
 })
@@ -79,24 +79,51 @@ app.get('/get-qbank-by-id', (req, res) => {
 app.get('/get-exam', authenToken, (req, res) => {
   const sql = "SELECT * FROM exam";
   db.query(sql, (err, result) => {
-    if(err)return res.json({Message: 'Error for getting exam info'});
+    if (err) return res.json({ Message: 'Error for getting exam info' });
     else return res.json(result);
   })
 })
 
+//Cập nhật giá trị mới cho user
+app.put('/update-user-info', (req, res) => {
+  const { userid, username, userfullname, userphone } = req.body;
+  const sql = `
+    UPDATE user
+    SET
+      username = ?,
+      userfullname = ?,
+      userphone = ?
+    WHERE userid =?
+  `;
+  db.query(sql, [username, userfullname, userphone, userid], (err, result) => {
+    if (err) {
+      console.error('Error updating user info:', err);
+      return res.status(500).json({ error: 'Server error while updating user info' });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    return res.status(200).json({ message: 'User updated successfully' });
+  })
+})
+
+
+//Đăng ký tài khoản mới
 app.post('/register', (req, res) => {
   const sql = 'insert into user(username, userphone, userpass, useremail) values (?)'
   bcrypt.hash(req.body.password.toString(), salt, (err, hash) => {
-    if(err) return res.json({Error: 'error for hashing password'})
+    if (err) return res.json({ Error: 'error for hashing password' })
     const values = [
       req.body.username,
       req.body.phonenumber,
       hash,
       req.body.email
-    ] 
+    ]
     db.query(sql, [values], (err, result) => {
-      if(err) return res.json({Error: 'Inseting data Error in server'})
-      return res.json({Status: 'Success'})
+      if (err) return res.json({ Error: 'Inseting data Error in server' })
+      return res.json({ Status: 'Success' })
     })
   })
 })
@@ -104,11 +131,11 @@ app.post('/register', (req, res) => {
 app.post('/login', (req, res) => {
   const sql = 'select * from user where useremail = ?'
   db.query(sql, [req.body.email], (err, data) => {
-    if(err) return res.json({Error: 'Login error in server'})
-    if(data.length > 0) {
+    if (err) return res.json({ Error: 'Login error in server' })
+    if (data.length > 0) {
       bcrypt.compare(req.body.password.toString(), data[0].userpass, (err, response) => {
-        if(err) return res.json({Error: 'Password compare error'})
-        if(response) {
+        if (err) return res.json({ Error: 'Password compare error' })
+        if (response) {
           const userid = data[0].userid;
           const name = data[0].username
           const accessToken = jwt.sign({name, userid}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '60m'})
@@ -125,21 +152,21 @@ app.post('/login', (req, res) => {
           //   if (err) return res.json({ Error: 'Error updating refresh token' });
           //   return res.json({ Status: 'Success', accessToken, refreshToken });
           // });
-          return res.json({Status: 'Success', accessToken, refreshToken, userid})
+          return res.json({ Status: 'Success', accessToken, refreshToken, userid })
         }
         else {
-          return res.json({Error: 'Password not matched'})
+          return res.json({ Error: 'Password not matched' })
         }
       })
     } else {
-      return res.json({Error: 'No email existed'})
+      return res.json({ Error: 'No email existed' })
     }
   })
 })
 
 app.post('/logout', authenToken, (req, res) => {
   res.clearCookie("refreshToken")
-  return res.sendStatus(200).json({Message: "Logged out !"})
+  return res.sendStatus(200).json({ Message: "Logged out !" })
 })
 //Mở sever express ở port 8081
 app.listen(8081, () => {
