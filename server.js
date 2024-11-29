@@ -43,15 +43,15 @@ app.post('/refreshToken', (req, res) => {
   // Kiểm tra refresh token trong database
   // const sql = 'SELECT * FROM user WHERE refreshtoken = ?';
   // db.query(sql, [refreshToken], (err, data) => {
-    // if (err) return res.status(500).json({ error: 'Server error' });
-    // if (data.length === 0) return res.status(403).json({ error: 'Invalid refresh token' });
-    // Xác thực refresh token
-    jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, data) => {
-      if (err) return res.status(403).json({ error: 'Invalid refresh token' });
-      // Tạo access token mới
-      const accessToken = jwt.sign({ username: data.username, userid: data.userid }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m' });
-      return res.json({ accessToken });
-    });
+  // if (err) return res.status(500).json({ error: 'Server error' });
+  // if (data.length === 0) return res.status(403).json({ error: 'Invalid refresh token' });
+  // Xác thực refresh token
+  jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, data) => {
+    if (err) return res.status(403).json({ error: 'Invalid refresh token' });
+    // Tạo access token mới
+    const accessToken = jwt.sign({ username: data.username, userid: data.userid }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m' });
+    return res.json({ accessToken });
+  });
   // });
 })
 
@@ -96,7 +96,7 @@ app.put('/update-user-info', (req, res) => {
       useravatarurl = ?
     WHERE userid =?
   `;
-  db.query(sql, [username, userfullname, userphone, useravatarurl ,userid], (err, result) => {
+  db.query(sql, [username, userfullname, userphone, useravatarurl, userid], (err, result) => {
     if (err) {
       console.error('Error updating user info:', err);
       return res.status(500).json({ error: 'Server error while updating user info' });
@@ -110,6 +110,50 @@ app.put('/update-user-info', (req, res) => {
   })
 })
 
+//Lưu kết quả bài thi
+app.post('/store-exam-result', (req, res) => {
+  console.log('Received data:', req.body); // Log the received data
+
+  const sql = `
+    INSERT INTO examresult
+    (examname,numscorrect, numswrong, numsskip, duration, accuracy, totalscore, listeningscore, numslisteningcorrect, readingscore, numsreadingcorrect, examid, userid, datetakeexam)
+    VALUES (?)
+  `;
+  const values = [
+    req.body.examname,
+    req.body.numscorrect,
+    req.body.numswrong,
+    req.body.numsskip,
+    req.body.duration,
+    req.body.accuracy,
+    req.body.totalscore,
+    req.body.listeningscore,
+    req.body.numslisteningcorrect,
+    req.body.readingscore,
+    req.body.numsreadingcorrect,
+    req.body.examid,
+    req.body.userid,
+    req.body.datetakeexam,
+  ];
+
+  db.query(sql, [values], (err, result) => {
+    if (err) {
+      console.error('Error inserting data:', err);
+      return res.json({ Error: 'Inserting data Error in server' });
+    }
+    return res.json({ Status: 'Success' });
+  });
+});
+
+//Lấy danh sách kết quả đề thi với userid
+app.get('/get-exam-result-by-id', (req,res) => {
+  const sql = "SELECT * FROM examresult WHERE userid = ?";
+  const {userid} = req.query;
+  db.query(sql, [userid], (err, result) => {
+    if (err) return res.json({ Message: 'Error for getting exam result' });
+    else return res.json(result);
+  })
+});
 
 //Đăng ký tài khoản mới
 app.post('/register', (req, res) => {
@@ -139,13 +183,13 @@ app.post('/login', (req, res) => {
         if (response) {
           const userid = data[0].userid;
           const name = data[0].username
-          const accessToken = jwt.sign({name, userid}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '60m'})
-          const refreshToken = jwt.sign({name, userid}, process.env.REFRESH_TOKEN_SECRET, {expiresIn: '7d'})
+          const accessToken = jwt.sign({ name, userid }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '60m' })
+          const refreshToken = jwt.sign({ name, userid }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' })
           res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
             secure: false, // set to true when deploy to production
             path: '/',
-            sameSite: 'strict' 
+            sameSite: 'strict'
           })
           // // Lưu refresh token vào database
           // const updateTokenSql = 'UPDATE user SET refreshtoken = ? WHERE useremail = ?';
@@ -153,7 +197,7 @@ app.post('/login', (req, res) => {
           //   if (err) return res.json({ Error: 'Error updating refresh token' });
           //   return res.json({ Status: 'Success', accessToken, refreshToken });
           // });
-          return res.json({ Status: 'Success', accessToken, refreshToken})
+          return res.json({ Status: 'Success', accessToken, refreshToken })
         }
         else {
           return res.json({ Error: 'Password not matched' })
