@@ -5,6 +5,10 @@ import jwt from 'jsonwebtoken'
 import bcrypt from 'bcrypt'
 import cookieParser from 'cookie-parser'
 import dotenv from 'dotenv'
+import axios from 'axios'
+import CryptoJS from 'crypto-js'
+import moment from 'moment'
+
 dotenv.config()
 
 const salt = 10
@@ -213,6 +217,53 @@ app.post('/logout', authenToken, (req, res) => {
   res.clearCookie("refreshToken")
   return res.sendStatus(200).json({ Message: "Logged out !" })
 })
+
+// it's payment time !
+const config = {
+  app_id: "2553",
+  key1: "PcY4iZIKFCIdgZvA6ueMcMHHUbRLYjPL",
+  key2: "kLtgPl8HHhfvMuDHPwKfgfsY4Ydm9eIz",
+  endpoint: "https://sb-openapi.zalopay.vn/v2/create"
+};
+
+app.post('/payment', async (req, res) => {
+  const embed_data = {
+    redirecturl: 'http://localhost:3000/user'
+  };
+
+  const items = [{"itemid":"pre","itemname":"premium","itemprice":1000000}];
+  const transID = Math.floor(Math.random() * 1000000);
+  const order = {
+    app_id: config.app_id,
+    app_trans_id: `${moment().format('YYMMDD')}_${transID}`, // translation missing: vi.docs.shared.sample_code.comments.app_trans_id
+    app_user: "user123", // req.body.userid
+    app_time: Date.now(), // miliseconds
+    item: JSON.stringify(items),
+    embed_data: JSON.stringify(embed_data),
+    amount: 1000000,
+    description: `Payment for the order #${transID}`,
+    bank_code: "",
+    title: "Thanh toán cho Premium"
+    // phone: req.body.phonenumber,
+    // email: req.body.email
+  };
+
+  // appid|app_trans_id|appuser|amount|apptime|embeddata|item
+  const data = config.app_id + "|" + order.app_trans_id + "|" + order.app_user + "|" + order.amount + "|" + order.app_time + "|" + order.embed_data + "|" + order.item;
+  order.mac = CryptoJS.HmacSHA256(data, config.key1).toString();
+
+  try {
+    const result = await axios.post(config.endpoint, null, { params: order })
+    console.log('check result data after pay: ', result.data)
+    if(result.data.return_code === 1) {
+      return res.json({order_url: result.data.order_url})
+    }
+  }
+  catch(err) {
+    console.log("error when payment: ", err.message);
+  }
+})
+
 //Mở sever express ở port 8081
 app.listen(8081, () => {
   console.log(`Listening me server, please wake up, give me hope in http://localhost:8081/`);
