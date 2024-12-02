@@ -241,7 +241,7 @@ const config = {
 
 app.post('/payment', async (req, res) => {
   const embed_data = {
-    redirecturl: 'http://localhost:3000/user'
+    redirecturl: 'http://localhost:3000/'
   };
 
   const items = [{"itemid":"pre","itemname":"premium","itemprice":1000000}];
