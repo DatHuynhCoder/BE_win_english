@@ -36,11 +36,12 @@ function authenToken(req, res, next) {
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, data) => {
     console.log(err, data)
     if (err) return res.sendStatus(403) // Forbidden error
+    console.log('authorization successfully !')
     next() // complete verify token 
   })
 }
 
-app.post('/refreshToken', (req, res) => {
+app.post('/refreshToken', (req, res) => { 
   const { refreshToken } = req.body;
   // const refreshToken = req.cookies.refreshToken
   if (!refreshToken) return res.status(401).json({ error: 'Refresh token is missing' });
@@ -53,7 +54,17 @@ app.post('/refreshToken', (req, res) => {
   jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, data) => {
     if (err) return res.status(403).json({ error: 'Invalid refresh token' });
     // Tạo access token mới
-    const accessToken = jwt.sign({ username: data.username, userid: data.userid }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m' });
+    const accessToken = jwt.sign(
+      { 
+        username: data.username, 
+        userid: data.userid, 
+        ispremium: data.ispremium 
+      }, 
+      process.env.ACCESS_TOKEN_SECRET, 
+      { 
+        expiresIn: '15m' 
+      }
+    );
     return res.json({ accessToken });
   });
   // });
@@ -187,8 +198,9 @@ app.post('/login', (req, res) => {
         if (response) {
           const userid = data[0].userid;
           const name = data[0].username
-          const accessToken = jwt.sign({ name, userid }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '60m' })
-          const refreshToken = jwt.sign({ name, userid }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' })
+          const ispremium = data[0].ispremium
+          const accessToken = jwt.sign({ name, userid, ispremium }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '60m' })
+          const refreshToken = jwt.sign({ name, userid, ispremium }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' })
           res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
             secure: false, // set to true when deploy to production
@@ -214,6 +226,7 @@ app.post('/login', (req, res) => {
 })
 
 app.post('/logout', authenToken, (req, res) => {
+  res.clearCookie("accessToken")
   res.clearCookie("refreshToken")
   return res.sendStatus(200).json({ Message: "Logged out !" })
 })
@@ -246,7 +259,7 @@ app.post('/payment', async (req, res) => {
     title: "Thanh toán cho Premium"
     // phone: req.body.phonenumber,
     // email: req.body.email
-  };
+  }; 
 
   // appid|app_trans_id|appuser|amount|apptime|embeddata|item
   const data = config.app_id + "|" + order.app_trans_id + "|" + order.app_user + "|" + order.amount + "|" + order.app_time + "|" + order.embed_data + "|" + order.item;
@@ -256,14 +269,32 @@ app.post('/payment', async (req, res) => {
     const result = await axios.post(config.endpoint, null, { params: order })
     console.log('check result data after pay: ', result.data)
     if(result.data.return_code === 1) {
-      return res.json({order_url: result.data.order_url})
+      return res.json({order_url: result.data.order_url, return_code: result.data.return_code})
     }
   }
-  catch(err) {
+  catch (err) { 
     console.log("error when payment: ", err.message);
   }
 })
-
+app.post('/set-premium', authenToken, (req, res) => {
+  console.log('call me set-premium')
+  const {userid} = req.body;
+  console.log('check userid: ', userid)
+  if(userid) {
+    const sql = `
+      UPDATE user  
+      SET ispremium = 1 
+      WHERE userid = ? 
+    `
+    db.query(sql, [userid], (err, result) => {
+      if(err) return res.json({Error: 'Error when trying to set premium for user with id = ' + userid})
+      return res.json({Status: 'Success'})
+    }) 
+  }
+  else {
+    return res.json({Status: 'Failed'})
+  }
+})
 //Mở sever express ở port 8081
 app.listen(8081, () => {
   console.log(`Listening me server, please wake up, give me hope in http://localhost:8081/`);
