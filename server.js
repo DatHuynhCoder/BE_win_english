@@ -311,6 +311,24 @@ app.post('/add-comment', (req, res) => {
     return res.json({Status: 'Success'})
   })
 })
+app.get('/get-comment-by-id', (req, res) => {
+  console.log('call me get comment')
+  const {examid} = req.query
+  console.log('check examid: ', examid)
+  const sql = `
+    select commenttext, commentdate, examid, rate, user.username
+    from comment 
+    left outer join user on comment.userid = user.userid 
+    where examid = ? 
+    order by rate desc
+    limit 3
+    `
+  db.query(sql, [examid], (err, results) => {
+    if(err) return res.json({Error: `Error when get comment: ${err}`})
+    console.log('check comments after get: ', results)
+    return res.json(results)
+  })
+})
 //Mở sever express ở port 8081
 app.listen(8081, () => {
   console.log(`Listening me server, please wake up, give me hope in http://localhost:8081/`);
