@@ -295,6 +295,22 @@ app.post('/set-premium', authenToken, (req, res) => {
     return res.json({Status: 'Failed'})
   }
 })
+app.post('/add-comment', (req, res) => {
+  console.log('call me add comment')
+  const {userid, examid, comment, rate, commentdate} = req.body
+  const sql = 'INSERT INTO comment(userid, examid, commenttext, rate,    commentdate ) VALUES (?)'
+  const values = [
+    userid, 
+    examid, 
+    comment, 
+    rate, 
+    commentdate
+  ]
+  db.query(sql, [values], (err, results) => {
+    if(err) return res.json({Error: 'Error when insert comment'})
+    return res.json({Status: 'Success'})
+  })
+})
 //Mở sever express ở port 8081
 app.listen(8081, () => {
   console.log(`Listening me server, please wake up, give me hope in http://localhost:8081/`);
