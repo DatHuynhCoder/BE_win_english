@@ -11,6 +11,7 @@ import moment from 'moment'
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import path from 'path';
+import multer from 'multer';
 
 dotenv.config()
 
@@ -346,6 +347,37 @@ app.get('/get-comment-by-id', (req, res) => {
     return res.json(results)
   })
 })
+
+//DÙNG MULTER CHO AVATAR USER
+//Tạo nơi chứa ảnh (uploads)
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/');
+  },
+  filename: function (req, file, cb) {
+    const uniqueName = `${Date.now()}-${file.originalname}`; // Đặt tên tệp duy nhất
+    cb(null, uniqueName);
+  },
+});
+
+const upload = multer({
+  storage: storage
+});
+
+
+app.post('/upload-avatar', upload.single('avatar'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).send('No file uploaded!');
+  }
+  const fileUrl = `http://localhost:8081/uploads/${req.file.filename}`;
+  res.status(200).json({ avatarUrl: fileUrl });
+});
+
+
+app.use('/uploads', express.static('uploads'));
+
+
+
 app.get('/count-comment-by-id', (req, res) => {
   // console.log('call me count total comment')
   const {examid} = req.query
@@ -359,6 +391,7 @@ app.get('/count-comment-by-id', (req, res) => {
     return res.json(results)
   })
 })
+
 //Mở sever express ở port 8081
 app.listen(8081, () => {
   console.log(`Listening me server, please wake up, give me hope in http://localhost:8081/`);
