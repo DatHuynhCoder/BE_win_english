@@ -8,6 +8,9 @@ import dotenv from 'dotenv'
 import axios from 'axios'
 import CryptoJS from 'crypto-js'
 import moment from 'moment'
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import path from 'path';
 
 dotenv.config()
 
@@ -18,6 +21,9 @@ const app = express()
 app.use(express.json())
 app.use(cors())
 app.use(cookieParser())
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+app.use('/audio', express.static(path.join(__dirname, 'audio')));
 
 //Kết nối tới database crud trên MySQL mở bằng Xampp
 const db = mysql.createConnection({
@@ -325,7 +331,7 @@ app.get('/get-comment-by-id', (req, res) => {
     `
   db.query(sql, [examid], (err, results) => {
     if(err) return res.json({Error: `Error when get comment: ${err}`})
-    console.log('check comments after get: ', results)
+    // console.log('check comments after get: ', results)
     return res.json(results)
   })
 })
