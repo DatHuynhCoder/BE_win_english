@@ -61,14 +61,14 @@ app.post('/refreshToken', (req, res) => {
     if (err) return res.status(403).json({ error: 'Invalid refresh token' });
     // Tạo access token mới
     const accessToken = jwt.sign(
-      { 
-        username: data.username, 
-        userid: data.userid, 
-        ispremium: data.ispremium 
+      {
+        username: data.username,
+        userid: data.userid,
+        ispremium: data.ispremium
       }, 
-      process.env.ACCESS_TOKEN_SECRET, 
+      process.env.ACCESS_TOKEN_SECRET,
       { 
-        expiresIn: '15m' 
+        expiresIn: '15m'
       }
     );
     return res.json({ accessToken });
@@ -97,7 +97,7 @@ app.get('/get-qbank-by-id', (req, res) => {
 })
 
 //Lấy tất cả các exam
-app.get('/get-exam', authenToken, (req, res) => {
+app.get('/get-exam', (req, res) => {
   const sql = "SELECT * FROM exam";
   db.query(sql, (err, result) => {
     if (err) return res.json({ Message: 'Error for getting exam info' });
@@ -134,6 +134,17 @@ app.put('/update-user-info', (req, res) => {
 //Lưu kết quả bài thi
 app.post('/store-exam-result', (req, res) => {
   console.log('Received data:', req.body); // Log the received data
+
+  const new_participants = req.body.examtotalparticipants + 1
+
+  const sql_update_totalparticipants = `
+    update exam 
+    set examtotalparticipants = ?
+    where examid = ?`
+
+  db.query(sql_update_totalparticipants, [new_participants, req.body.examid], (err, result) => {
+    if(err) return res.json({Error: 'Error when update examtotalparticipants: ' + err})
+  })
 
   const sql = `
     INSERT INTO examresult
@@ -283,7 +294,7 @@ app.post('/payment', async (req, res) => {
   }
 })
 app.post('/set-premium', authenToken, (req, res) => {
-  console.log('call me set-premium')
+  // console.log('call me set-premium')
   const {userid} = req.body;
   console.log('check userid: ', userid)
   if(userid) {
@@ -302,7 +313,7 @@ app.post('/set-premium', authenToken, (req, res) => {
   }
 })
 app.post('/add-comment', (req, res) => {
-  console.log('call me add comment')
+  // console.log('call me add comment')
   const {userid, examid, comment, rate, commentdate} = req.body
   const sql = 'INSERT INTO comment(userid, examid, commenttext, rate,    commentdate ) VALUES (?)'
   const values = [
@@ -318,9 +329,9 @@ app.post('/add-comment', (req, res) => {
   })
 })
 app.get('/get-comment-by-id', (req, res) => {
-  console.log('call me get comment')
+  // console.log('call me get comment')
   const {examid} = req.query
-  console.log('check examid: ', examid)
+  // console.log('check examid: ', examid)
   const sql = `
     select commenttext, commentdate, examid, rate, user.username
     from comment 
@@ -332,6 +343,19 @@ app.get('/get-comment-by-id', (req, res) => {
   db.query(sql, [examid], (err, results) => {
     if(err) return res.json({Error: `Error when get comment: ${err}`})
     // console.log('check comments after get: ', results)
+    return res.json(results)
+  })
+})
+app.get('/count-comment-by-id', (req, res) => {
+  // console.log('call me count total comment')
+  const {examid} = req.query
+  const sql = `
+    select count(*) as totalparticipants
+    from comment
+    where examid = ?
+  `
+  db.query(sql, [examid], (err, results) => {
+    if(err) return res.json({Error: 'Error when count comment: ' + err})
     return res.json(results)
   })
 })
