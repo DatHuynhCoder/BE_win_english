@@ -25,6 +25,7 @@ app.use(cookieParser())
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 app.use('/audio', express.static(path.join(__dirname, 'audio')));
+app.use('/toeic_question_pics', express.static(path.join(__dirname, 'toeic_question_pics')));
 
 //Kết nối tới database crud trên MySQL mở bằng Xampp
 const db = mysql.createConnection({
