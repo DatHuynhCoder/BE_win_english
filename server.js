@@ -382,7 +382,7 @@ app.get('/count-comment-by-id', (req, res) => {
   // console.log('call me count total comment')
   const {examid} = req.query
   const sql = `
-    select count(*) as totalparticipants
+    select count(*) as totalcomments
     from comment
     where examid = ?
   `
