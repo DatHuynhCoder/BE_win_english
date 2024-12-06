@@ -106,6 +106,14 @@ app.get('/get-exam', (req, res) => {
     else return res.json(result);
   })
 })
+//Lấy tất cả các user
+app.get('/get-all-user', (req, res) => {
+  const sql = "SELECT * FROM user";
+  db.query(sql, (err, result) => {
+    if (err) return res.json({ Message: 'Error for getting exam info' });
+    else return res.json(result);
+  })
+})
 
 //Cập nhật giá trị mới cho user
 app.put('/update-user-info', (req, res) => {
@@ -178,6 +186,14 @@ app.post('/store-exam-result', (req, res) => {
     return res.json({ Status: 'Success' });
   });
 });
+//Lấy tất cả exam result
+app.get('/get-all-exam-result', (req, res) => {
+  const sql = "SELECT * FROM examresult";
+  db.query(sql, (err, result) => {
+    if (err) return res.json({ Message: 'Error for getting exam info' });
+    else return res.json(result);
+  })
+})
 
 //Lấy danh sách kết quả đề thi với userid
 app.get('/get-exam-result-by-id', (req,res) => {
