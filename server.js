@@ -66,7 +66,8 @@ app.post('/refreshToken', (req, res) => {
       {
         username: data.username,
         userid: data.userid,
-        ispremium: data.ispremium
+        ispremium: data.ispremium,
+        isadmin: data.isadmin
       }, 
       process.env.ACCESS_TOKEN_SECRET,
       { 
@@ -141,6 +142,20 @@ app.put('/update-user-info', (req, res) => {
   })
 })
 
+// Xóa user
+app.post('/delete-user-by-id', (req, res) => {
+  console.log('call me delete user')
+  const {userid} = req.body
+  const sql = `
+    delete from user
+    where userid = ?
+  `
+  db.query(sql, [userid], (err, result) => {
+    if(err) return req.json({Status: 'Error'})
+    return res.json({Status: 'Success'})
+  })
+})
+
 //Lưu kết quả bài thi
 app.post('/store-exam-result', (req, res) => {
   console.log('Received data:', req.body); // Log the received data
@@ -212,6 +227,20 @@ app.get('/get-exam-result-by-id', (req,res) => {
     else return res.json(result);
   })
 });
+//Lấy danh sách kết quả đề thi với date
+app.get('/get-exam-result-with-date', (req,res) => {
+  const sql = `
+    select datetakeexam, count(*) as takeexamtimes
+    from examresult
+    group by datetakeexam
+    order by datetakeexam desc
+    limit 5
+  `
+  db.query(sql, (err, result) => {
+    if(err) return res.json({Error: 'Error when get examresult with date'})
+    return res.json(result)
+  })
+})
 
 app.get('/get-total-listening-reading-total-score', (req, res) => {
   const sql = `
@@ -253,8 +282,9 @@ app.post('/login', (req, res) => {
           const userid = data[0].userid;
           const name = data[0].username
           const ispremium = data[0].ispremium
-          const accessToken = jwt.sign({ name, userid, ispremium }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '60m' })
-          const refreshToken = jwt.sign({ name, userid, ispremium }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' })
+          const isadmin = data[0].isadmin
+          const accessToken = jwt.sign({ name, userid, ispremium, isadmin }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '60m' })
+          const refreshToken = jwt.sign({ name, userid, ispremium, isadmin }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' })
           res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
             secure: false, // set to true when deploy to production
