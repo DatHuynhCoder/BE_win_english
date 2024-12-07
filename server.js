@@ -32,7 +32,7 @@ const db = mysql.createConnection({
   host: 'localhost',
   user: 'root',
   password: '',
-  database: 'wineng_db'
+  database: 'final_wineng_db'
 })
 
 // middleware
