@@ -190,7 +190,15 @@ app.post('/store-exam-result', (req, res) => {
 app.get('/get-all-exam-result', (req, res) => {
   const sql = "SELECT * FROM examresult";
   db.query(sql, (err, result) => {
-    if (err) return res.json({ Message: 'Error for getting exam info' });
+    if (err) return res.json({ Message: 'Error for getting all exam info' });
+    else return res.json(result);
+  })
+})
+
+app.get('/count-exam-result', (req, res) => {
+  const sql = "SELECT count(*) as numberofexamresult FROM examresult";
+  db.query(sql, (err, result) => {
+    if (err) return res.json({ Message: 'Error for count exam result' });
     else return res.json(result);
   })
 })
@@ -204,6 +212,17 @@ app.get('/get-exam-result-by-id', (req,res) => {
     else return res.json(result);
   })
 });
+
+app.get('/get-total-listening-reading-total-score', (req, res) => {
+  const sql = `
+    select sum(listeningscore) as listeningscore, sum(readingscore) as readingscore, sum(totalscore) as totalscore
+    from examresult
+  `
+  db.query(sql, (err, result) => {
+    if(err) return res.json({Error: "Error when get listening score"})
+    return res.json(result)
+  })
+})
 
 //Đăng ký tài khoản mới
 app.post('/register', (req, res) => {
@@ -411,5 +430,5 @@ app.get('/count-comment-by-id', (req, res) => {
 
 //Mở sever express ở port 8081
 app.listen(8081, () => {
-  console.log(`Listening me server, please wake up, give me hope in http://localhost:8081/`);
+  console.log(`Listening me server, please wake up, give me hope http://localhost:8081/`);
 })
