@@ -12,6 +12,7 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import path from 'path';
 import multer from 'multer';
+import nodemailer from 'nodemailer'
 
 dotenv.config()
 
@@ -115,7 +116,15 @@ app.get('/get-all-user', (req, res) => {
     else return res.json(result);
   })
 })
-
+//Lấy user theo email
+app.get('/get-user-by-email', (req, res) => {
+  const {email} = req.query
+  const sql = "SELECT * FROM user where useremail = ?";
+  db.query(sql, [email], (err, result) => {
+    if (err) return res.json({ Message: 'Error for getting exam info' });
+    else return res.json(result);
+  })
+})
 //Cập nhật giá trị mới cho user
 app.put('/update-user-info', (req, res) => {
   const { userid, username, userfullname, userphone, useravatarurl } = req.body;
@@ -300,12 +309,62 @@ app.post('/login', (req, res) => {
           return res.json({ Status: 'Success', accessToken, refreshToken })
         }
         else {
-          return res.json({ Error: 'Password not matched' })
+          return res.json({ Error: 'Mật khẩu không đúng' })
         }
       })
     } else {
-      return res.json({ Error: 'No email existed' })
+      return res.json({ Error: 'Không tồn tại người dùng với email này !' })
     }
+  })
+})
+app.post('/send-recovery-email', async (req, res) => {
+  console.log('call me send-recovery-email')
+  const { OTP, recipient_email } = req.body
+  console.log('check opt and recipient-email: ', OTP, recipient_email)
+  if (!recipient_email) {
+    return res.status(400).json({ message: 'Email address is required!' });
+  }
+  //Cấu hình transporter (sử dụng gmail)
+  const transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false, // true for port 465, false for other ports
+    auth: {
+      user: process.env.MAIL_USERNAME,
+      pass: process.env.MAIL_PASSWORD,
+    },
+  });
+  try {
+    const info = await transporter.sendMail({
+      from: '"Maddison Foo Koch 👻" <huynhanh.170504@gmail.com>', // sender address
+      to: recipient_email, // list of receivers
+      subject: "Hello ✔", // Subject line
+      text: "YOUR OTP CODE: " + OTP, // plain text body
+      html: "<b>YOUR OTP CODE: " + OTP + "</b>", // html body
+    });
+    console.log('Email sent: ' + info);
+  }
+  catch (err) {
+    return res.json({Error: err})
+  }
+  return res.json({Status: 'Success'})
+})
+
+app.post('/update-password-by-email', (req, res) => {
+  console.log('call me update password-by-email')
+  const {resetEmail, password} = req.body
+  console.log('check resetEmail and password: ', resetEmail, password) //check resetEmail and password:  huynhanh.170504@gmail.com 321
+  const sql = `
+    update user
+    set userpass = ? 
+    where useremail = ?
+  `
+  bcrypt.hash(password.toString(), salt, (err, hash) => {
+    if (err) return res.json({ Error: 'error for hashing password in update statement' })
+    db.query(sql, [hash, resetEmail], (err, result) => {
+      if (err) return res.json({ Status: 'Error', Message: err })
+      return res.json({ Status: 'Success' })
+    })
   })
 })
 
