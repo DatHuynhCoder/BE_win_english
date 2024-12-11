@@ -68,7 +68,8 @@ app.post('/refreshToken', (req, res) => {
         username: data.username,
         userid: data.userid,
         ispremium: data.ispremium,
-        isadmin: data.isadmin
+        isadmin: data.isadmin,
+        useravatarurl: data.useravatarurl
       }, 
       process.env.ACCESS_TOKEN_SECRET,
       { 
@@ -292,8 +293,9 @@ app.post('/login', (req, res) => {
           const name = data[0].username
           const ispremium = data[0].ispremium
           const isadmin = data[0].isadmin
-          const accessToken = jwt.sign({ name, userid, ispremium, isadmin }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '60m' })
-          const refreshToken = jwt.sign({ name, userid, ispremium, isadmin }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' })
+          const useravatarurl = data[0].useravatarurl
+          const accessToken = jwt.sign({ name, userid, ispremium, isadmin, useravatarurl }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '60m' })
+          const refreshToken = jwt.sign({ name, userid, ispremium, isadmin, useravatarurl }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' })
           res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
             secure: false, // set to true when deploy to production
