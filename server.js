@@ -265,20 +265,31 @@ app.get('/get-total-listening-reading-total-score', (req, res) => {
 
 //Đăng ký tài khoản mới
 app.post('/register', (req, res) => {
-  const sql = 'insert into user(username, userphone, userpass, useremail) values (?)'
-  bcrypt.hash(req.body.password.toString(), salt, (err, hash) => {
-    if (err) return res.json({ Error: 'error for hashing password' })
-    const values = [
-      req.body.username,
-      req.body.phonenumber,
-      hash,
-      req.body.email
-    ]
-    db.query(sql, [values], (err, result) => {
-      if (err) return res.json({ Error: 'Inseting data Error in server' })
-      return res.json({ Status: 'Success' })
-    })
+  console.log('call me register')
+  const sql_check_if_exist = 'select * from user where useremail = ? or userphone = ?'
+  db.query(sql_check_if_exist, [req.body.email, req.body.phonenumber], (err, checkResult) => {
+    if(err) return res.json({Status: 'Error', Error: err})
+    if(checkResult.length > 0) {
+      return res.json({Status: 'Error', Error: 'Email hoặc số điện thoại đã tồn tại'})
+    }
+    else {
+      const sql = 'insert into user(username, userphone, userpass, useremail) values (?)'
+      bcrypt.hash(req.body.password.toString(), salt, (err, hash) => {
+        if (err) return res.json({ Error: 'error for hashing password' })
+        const values = [
+          req.body.username,
+          req.body.phonenumber,
+          hash,
+          req.body.email
+        ]
+        db.query(sql, [values], (err, result) => {
+          if (err) return res.json({ Error: 'Inseting data Error in server' })
+          return res.json({ Status: 'Success' })
+        })
+      })
+    }
   })
+  
 })
 
 app.post('/login', (req, res) => {
