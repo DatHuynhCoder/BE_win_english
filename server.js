@@ -295,10 +295,10 @@ app.post('/register', (req, res) => {
 app.post('/login', (req, res) => {
   const sql = 'select * from user where useremail = ?'
   db.query(sql, [req.body.email], (err, data) => {
-    if (err) return res.json({ Error: 'Login error in server' })
+    if (err) return res.json({ Status: 'Error', Error: err })
     if (data.length > 0) {
       bcrypt.compare(req.body.password.toString(), data[0].userpass, (err, response) => {
-        if (err) return res.json({ Error: 'Password compare error' })
+        if (err) return res.json({ Status: 'Error', Error: 'Password compare error' })
         if (response) {
           const userid = data[0].userid;
           const name = data[0].username
@@ -322,11 +322,11 @@ app.post('/login', (req, res) => {
           return res.json({ Status: 'Success', accessToken, refreshToken })
         }
         else {
-          return res.json({ Error: 'Mật khẩu không đúng' })
+          return res.json({ Status: 'Error', Error: 'Mật khẩu không đúng' })
         }
       })
     } else {
-      return res.json({ Error: 'Không tồn tại người dùng với email này !' })
+      return res.json({ Status: 'Error', Error: 'Không tồn tại người dùng với email này !' })
     }
   })
 })
