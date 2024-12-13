@@ -265,29 +265,40 @@ app.get('/get-total-listening-reading-total-score', (req, res) => {
 
 //Đăng ký tài khoản mới
 app.post('/register', (req, res) => {
-  const sql = 'insert into user(username, userphone, userpass, useremail) values (?)'
-  bcrypt.hash(req.body.password.toString(), salt, (err, hash) => {
-    if (err) return res.json({ Error: 'error for hashing password' })
-    const values = [
-      req.body.username,
-      req.body.phonenumber,
-      hash,
-      req.body.email
-    ]
-    db.query(sql, [values], (err, result) => {
-      if (err) return res.json({ Error: 'Inseting data Error in server' })
-      return res.json({ Status: 'Success' })
-    })
+  console.log('call me register')
+  const sql_check_if_exist = 'select * from user where useremail = ? or userphone = ?'
+  db.query(sql_check_if_exist, [req.body.email, req.body.phonenumber], (err, checkResult) => {
+    if(err) return res.json({Status: 'Error', Error: err})
+    if(checkResult.length > 0) {
+      return res.json({Status: 'Error', Error: 'Email hoặc số điện thoại đã tồn tại'})
+    }
+    else {
+      const sql = 'insert into user(username, userphone, userpass, useremail) values (?)'
+      bcrypt.hash(req.body.password.toString(), salt, (err, hash) => {
+        if (err) return res.json({ Error: 'error for hashing password' })
+        const values = [
+          req.body.username,
+          req.body.phonenumber,
+          hash,
+          req.body.email
+        ]
+        db.query(sql, [values], (err, result) => {
+          if (err) return res.json({ Error: 'Inseting data Error in server' })
+          return res.json({ Status: 'Success' })
+        })
+      })
+    }
   })
+  
 })
 
 app.post('/login', (req, res) => {
   const sql = 'select * from user where useremail = ?'
   db.query(sql, [req.body.email], (err, data) => {
-    if (err) return res.json({ Error: 'Login error in server' })
+    if (err) return res.json({ Status: 'Error', Error: err })
     if (data.length > 0) {
       bcrypt.compare(req.body.password.toString(), data[0].userpass, (err, response) => {
-        if (err) return res.json({ Error: 'Password compare error' })
+        if (err) return res.json({ Status: 'Error', Error: 'Password compare error' })
         if (response) {
           const userid = data[0].userid;
           const name = data[0].username
@@ -311,11 +322,11 @@ app.post('/login', (req, res) => {
           return res.json({ Status: 'Success', accessToken, refreshToken })
         }
         else {
-          return res.json({ Error: 'Mật khẩu không đúng' })
+          return res.json({ Status: 'Error', Error: 'Mật khẩu không đúng' })
         }
       })
     } else {
-      return res.json({ Error: 'Không tồn tại người dùng với email này !' })
+      return res.json({ Status: 'Error', Error: 'Không tồn tại người dùng với email này !' })
     }
   })
 })
