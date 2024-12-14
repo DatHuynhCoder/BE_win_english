@@ -275,7 +275,7 @@ app.post('/register', (req, res) => {
     else {
       const sql = 'insert into user(username, userphone, userpass, useremail) values (?)'
       bcrypt.hash(req.body.password.toString(), salt, (err, hash) => {
-        if (err) return res.json({ Error: 'error for hashing password' })
+        if (err) return res.json({Status: 'Error', Error: 'error for hashing password' })
         const values = [
           req.body.username,
           req.body.phonenumber,
@@ -283,7 +283,7 @@ app.post('/register', (req, res) => {
           req.body.email
         ]
         db.query(sql, [values], (err, result) => {
-          if (err) return res.json({ Error: 'Inseting data Error in server' })
+          if (err) return res.json({ Status: 'Error', Error: 'Inseting data Error in server' })
           return res.json({ Status: 'Success' })
         })
       })
