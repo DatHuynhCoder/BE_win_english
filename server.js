@@ -434,8 +434,20 @@ app.post('/payment', async (req, res) => {
 })
 app.post('/set-premium', authenToken, (req, res) => {
   // console.log('call me set-premium')
-  const {userid} = req.body;
-  console.log('check userid: ', userid)
+  const {userid, timepremium, payid} = req.body;
+  console.log('check userid-timepremium-payid: ', userid, '-', timepremium, '-', payid)
+  const sql_save_premium_info = `insert into premium(userid, timepremium, payid) values (?)`
+  const premium_info = [
+    userid, 
+    timepremium, 
+    payid
+  ]
+  db.query(sql_save_premium_info, [premium_info], (err, save_result) => {
+    if(err) {
+      console.log('Error while save premium info: ', err)
+      return res.json({Status: 'Error', Error: err})
+    }
+  })
   if(userid) {
     const sql = `
       UPDATE user  
